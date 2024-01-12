@@ -18,3 +18,5 @@ management:
     web:
       exposure:
         include: 'info,health,metrics'
+business:
+  flight-limit: 150

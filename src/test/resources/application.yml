@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:transferz_test
+    username:
+    password:
+    driverClassName: org.h2.Driver
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: yyyy-MM-dd HH:mm:ss
+business:
+  flight-limit: 3
