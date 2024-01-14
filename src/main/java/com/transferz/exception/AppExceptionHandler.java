@@ -12,9 +12,7 @@ import java.util.Map;
 public class AppExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(final ConstraintViolationException ex) {
-        var errors = ex.getConstraintViolations();
-        //todo
+    public ResponseEntity<Map<String, String>> handleValidationException() {
         return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
 

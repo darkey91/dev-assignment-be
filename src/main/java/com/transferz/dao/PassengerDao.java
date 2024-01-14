@@ -8,10 +8,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface PassengerDao extends JpaRepository<Passenger, String> {
+public interface PassengerDao extends JpaRepository<Passenger, Long> {
 
     @Query("select p.flightCode from Passenger p where p.name = :name")
     List<String> findFlightCodesByName(String name);
-
 
 }

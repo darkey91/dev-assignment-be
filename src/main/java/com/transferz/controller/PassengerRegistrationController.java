@@ -1,11 +1,9 @@
 package com.transferz.controller;
 
-import com.transferz.dao.AirportDao;
 import com.transferz.dao.FlightDao;
 import com.transferz.dao.PassengerDao;
 import com.transferz.dto.request.RegisterPassengerRequest;
 import com.transferz.dto.response.RegisterPassengerResponse;
-import com.transferz.entity.Airport;
 import com.transferz.entity.Flight;
 import com.transferz.entity.Passenger;
 import com.transferz.exception.TransferzException;
@@ -23,19 +21,15 @@ import java.util.List;
 public class PassengerRegistrationController {
 
     @Value("${business.flight-limit}")
-    public int passengerCount;
+    private int passengerCount;
 
     private final FlightDao flightDao;
-
-    private final AirportDao airportDao;
 
     private final PassengerDao passengerDao;
 
     public PassengerRegistrationController(final FlightDao flightDao,
-                                           final AirportDao airportDao,
                                            final PassengerDao passengerDao) {
         this.flightDao = flightDao;
-        this.airportDao = airportDao;
         this.passengerDao = passengerDao;
     }
 
@@ -44,11 +38,8 @@ public class PassengerRegistrationController {
     public ResponseEntity<RegisterPassengerResponse> registerPassenger(@RequestBody RegisterPassengerRequest request) {
         var passengerName = request.passengerName();
         var originAirportCode = request.origAirportCode();
-        var originAirportId = airportDao.findByCode(originAirportCode)
-                .map(Airport::getId)
-                .orElseThrow(() -> new TransferzException(String.format("Airport with code=%s doesn't exist.", originAirportCode )));
         List<String> passengerFlightCodes = passengerDao.findFlightCodesByName(passengerName);
-        var flights = flightDao.findByOriginAndTimeFilteredByCode(originAirportId, request.departureAfterTime(), passengerFlightCodes, passengerCount);
+        var flights = flightDao.findByOriginAndTimeFilteredByCode(originAirportCode, request.departureAfterTime(), passengerFlightCodes, passengerCount);
         if (flights.isEmpty()) {
             throw new TransferzException("No available flights for registration.");
         }

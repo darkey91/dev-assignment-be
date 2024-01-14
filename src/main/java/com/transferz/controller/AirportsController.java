@@ -9,13 +9,13 @@ import com.transferz.entity.Airport;
 import com.transferz.rc.ResponseCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -29,7 +29,7 @@ public class AirportsController {
         this.airportDao = airportDao;
     }
 
-    @PostMapping("/airports")
+    @PostMapping("/saveAirport")
     public ResponseEntity<SaveAirportResponse> saveAirport(@RequestBody SaveAirportRequest saveAirportRequest) {
         String name = saveAirportRequest.name();
         String code = saveAirportRequest.code();
@@ -51,9 +51,21 @@ public class AirportsController {
 
     }
 
-    @GetMapping("/airports")
-    public GetAirportsResponse getAirports(@RequestBody GetAirportsRequest getAirportsRequest) {
-//        TODO
-        return null;
+    @PostMapping("/getAirports")
+    public ResponseEntity<GetAirportsResponse> getAirports(@RequestBody GetAirportsRequest getAirportsRequest) {
+        Pageable pageable = PageRequest.of(getAirportsRequest.page(), getAirportsRequest.limit());
+        List<String> names = getAirportsRequest.names();
+        List<String> codes = getAirportsRequest.codes();
+        List<Airport> airports;
+        if (names != null && !names.isEmpty() && codes != null && !codes.isEmpty()) {
+            airports = airportDao.findAllByNameInOrCodeIn(names, codes, pageable);
+        } else if (names != null && !names.isEmpty()) {
+            airports = airportDao.findAllByNameIn(names, pageable);
+        } else if (codes != null && !codes.isEmpty()) {
+            airports = airportDao.findAllByCodeIn(codes, pageable);
+        } else {
+            airports = airportDao.findAll(pageable).getContent();
+        }
+        return new ResponseEntity<>(new GetAirportsResponse(getAirportsRequest.page(), airports), HttpStatus.OK);
     }
 }

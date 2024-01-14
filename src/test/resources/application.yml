@@ -8,5 +8,7 @@ spring:
     serialization:
       write-dates-as-timestamps: false
     date-format: yyyy-MM-dd HH:mm:ss
+  jpa:
+    show-sql: true
 business:
   flight-limit: 3

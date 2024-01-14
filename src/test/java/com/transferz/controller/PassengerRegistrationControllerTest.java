@@ -1,29 +1,30 @@
 package com.transferz.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.transferz.dao.AirportDao;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.transferz.dao.FlightDao;
 import com.transferz.dao.PassengerDao;
 import com.transferz.dto.request.RegisterPassengerRequest;
-import com.transferz.entity.Airport;
 import com.transferz.entity.Flight;
 import com.transferz.entity.Passenger;
-import org.junit.jupiter.api.BeforeAll;
+import com.transferz.exception.AppExceptionHandler;
+import com.transferz.exception.TransferzException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -31,62 +32,58 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@ExtendWith(MockitoExtension.class)
 public class PassengerRegistrationControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Mock
     private FlightDao flightDao;
 
-    @MockBean
-    private AirportDao airportDao;
-
-    @MockBean
+    @Mock
     private PassengerDao passengerDao;
 
-    @Autowired
-    private Jackson2ObjectMapperBuilder mapperBuilder;
+    @InjectMocks
+    private PassengerRegistrationController controller;
 
     private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setup() {
+        objectMapper = new ObjectMapper();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new AppExceptionHandler())
+                .build();
+        objectMapper.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(controller, "passengerCount", 3);
+    }
 
     @Test
     public void shouldReturnOkWhenRegisteringNewPassenger() throws Exception {
         //given
-        objectMapper = mapperBuilder.build();
         LocalDateTime departAfter = LocalDateTime.now().minusDays(1);
         var originAirportCode = "AMS";
         var passengerName = "Name";
-        var originAirportId = "1";
-        var destinationAirportId = "123";
-        var airport = Airport.builder()
-                .id(originAirportId)
-                .code(originAirportCode)
-                .country("Netherlands")
-                .name("Schiphol")
-                .build();
+        var destinationAirportCode = "FRU";
         var flightUsed = Flight.builder()
                 .code("Flight01")
-                .originAirportId(originAirportId)
-                .destinationAirportId("432")
+                .originAirportCode(originAirportCode)
+                .destinationAirportCode("DEST")
                 .departureTime(LocalDateTime.now())
                 .arrivalTime(LocalDateTime.now().plusHours(3))
                 .passengerCount(3)
                 .build();
         var flight = Flight.builder()
                 .code("Flight02")
-                .originAirportId(originAirportId)
-                .destinationAirportId(destinationAirportId)
+                .originAirportCode(originAirportCode)
+                .destinationAirportCode(destinationAirportCode)
                 .departureTime(LocalDateTime.now())
                 .arrivalTime(LocalDateTime.now().plusHours(3))
                 .passengerCount(2)
                 .build();
         RegisterPassengerRequest request = new RegisterPassengerRequest(passengerName, originAirportCode, departAfter);
-        when(airportDao.findByCode(eq(originAirportCode))).thenReturn(Optional.of(airport));
         when(passengerDao.findFlightCodesByName(passengerName)).thenReturn(List.of(flightUsed.getCode()));
-        when(flightDao.findByOriginAndTimeFilteredByCode(eq(originAirportId), eq(departAfter), eq(List.of("Flight01")), eq(3)))
+        when(flightDao.findByOriginAndTimeFilteredByCode(eq(originAirportCode), eq(departAfter), eq(List.of("Flight01")), eq(3)))
                 .thenReturn(List.of(flight));
 
         //when
@@ -105,35 +102,27 @@ public class PassengerRegistrationControllerTest {
     }
 
     @Test
-    public void shouldReturnBadRequestWhenAirportDoesNotExist() throws Exception {
-        when(airportDao.findByCode(any(String.class))).thenReturn(Optional.empty());
-
+    public void shouldReturnBadRequestWhenRequestDataInvalid() throws Exception {
         mockMvc.perform(post("/register")
-                        .content("{ \"passengerName\": \"Name\", \"origAirportCode\": \"AMS\", \"departureAfterTime\": \"" + LocalDateTime.now() + "\" }")
+                        .content("{ \"passengerName\": \"Name\", \"origAirportCode\": \"AMS\"}")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    public void shouldReturnBadRequestWhenNoAvailableFlights() throws Exception {
+    public void shouldThrowExceptionWhenNoAvailableFlights() throws Exception {
         LocalDateTime departAfter = LocalDateTime.now();
-        RegisterPassengerRequest request = new RegisterPassengerRequest("John", "AMS", departAfter);
-        var airport = Airport.builder()
-                .id("id")
-                .code("AMS")
-                .country("Netherlands")
-                .name("Schiphol")
-                .build();
-        when(airportDao.findByCode(any(String.class))).thenReturn(Optional.of(airport));
-
-        when(passengerDao.findFlightCodesByName("John")).thenReturn(List.of("Flight01"));
-        when(flightDao.findByOriginAndTimeFilteredByCode(eq("id"), eq(departAfter), eq(List.of("Flight01")), eq(3)))
+        var originAirportCode = "AMS";
+        RegisterPassengerRequest request = new RegisterPassengerRequest("John", originAirportCode, departAfter);
+        var usedFlightCode = "Flight01";
+        when(passengerDao.findFlightCodesByName("John")).thenReturn(List.of(usedFlightCode));
+        when(flightDao.findByOriginAndTimeFilteredByCode(eq(originAirportCode), eq(departAfter), eq(List.of(usedFlightCode)), eq(3)))
                 .thenReturn(List.of());
 
         mockMvc.perform(post("/register")
-                        .content("{ \"passengerName\": \"John\", \"origAirportCode\": \"DFW\", \"departureAfterTime\": \"" + LocalDateTime.now().toString() + "\" }")
+                        .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(TransferzException.class, result.getResolvedException()));
     }
-
 }

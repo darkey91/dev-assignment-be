@@ -1,11 +1,11 @@
 package com.transferz.dto.request;
 
-import javax.validation.constraints.NotNull;
+import lombok.NonNull;
+
 import java.time.LocalDateTime;
 
 public record RegisterPassengerRequest(
-        @NotNull String passengerName,
-        @NotNull String origAirportCode, //todo use AMS by default?,
-        @NotNull  LocalDateTime departureAfterTime
-
+        @NonNull String passengerName,
+        @NonNull String origAirportCode,
+        @NonNull  LocalDateTime departureAfterTime
 ) {}

@@ -3,7 +3,6 @@ package com.transferz.entity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 
@@ -14,20 +13,19 @@ import javax.persistence.*;
 @AllArgsConstructor
 public class Airport {
 
-	public final static String TABLE_NAME = "airports";
+	public final static String TABLE_NAME = "airport";
 
-	public final static String NAME = "passengerName";
+	public final static String NAME = "name";
 
 	public final static String CODE = "code";
 
-//todo 	"validation for fields" а какие ограничения елки?
 	@Id
-	@GeneratedValue(generator = "uuid")
-	@GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDGenerator")
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "airport_id_seq")
+	@SequenceGenerator(name="airport_id_seq", allocationSize=1)
 	@Column(name = "id", updatable = false, nullable = false)
-	private String id;
+	private Long id;
 
-	@Column(name = "passengerName", nullable = false)
+	@Column(name = "name", nullable = false, unique = true)
 	private String name;
 
 	@Column(name = "code", nullable = false, unique = true)

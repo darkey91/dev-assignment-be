@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface FlightDao extends JpaRepository<Flight, String> {
+public interface FlightDao extends JpaRepository<Flight, Long> {
 
-    @Query("select f from Flight f where f.originAirportId = :airportId and f.departureTime >= :afterDepartureTime and f.code not in :exclusionCodes and f.passengerCount < :passengerLimit")
-    List<Flight> findByOriginAndTimeFilteredByCode(String airportId, LocalDateTime afterDepartureTime, List<String> exclusionCodes, int passengersLimit);
+    @Query("select f from Flight f where f.originAirportCode = :airportCode and f.departureTime >= :afterDepartureTime and f.code not in :excludedFlightCodes and f.passengerCount < :passengersLimit")
+    List<Flight> findByOriginAndTimeFilteredByCode(String airportCode, LocalDateTime afterDepartureTime, List<String> excludedFlightCodes, int passengersLimit);
 
 }

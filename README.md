@@ -1,6 +1,25 @@
 # Transferz development challenge
 ###### v1.2
 
+# How to run this application
+
+### Setup Docker compose. Make sure that Docker daemon is on.
+```shell
+cd dev-containers
+docker-compose up -d  
+```
+
+### Run application from project root (or run it from IDE)
+```shell
+mvn clean package
+java -jar target/dev-assignment-be.0.1.jar
+```
+
+
+
+
+
+
 ## Introduction
 This is development challenge for Java developer candidates at transferz. The goal of this task is to understand your way of thinking and problem-solving skills around composing new services, database design, SQL composing, understandign of multi-threading and unit-testing.
 
